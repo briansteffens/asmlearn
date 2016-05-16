@@ -7,21 +7,20 @@ data_items:
 
 .globl _start
 _start:
-    movl $0, %edi                    # load 0 into index register
-    movl data_items(, %edi, 4), %eax # load the first byte of data into eax
-    movl %eax, %ebx                  # first number is always max so far
+    movl $0, %edi       # index register starts at 0
+    movl $0, %ebx       # max number starts at 0
 
 start_loop:
-    cmpl $0, %eax                    # check for null-termination value
-    je loop_exit                     # exit if so
+    movl data_items(,%edi,4), %eax  # Load next value
+    incl %edi           # increment array index for next loop iteration
 
-    incl %edi                        # increment array index
-    movl data_items(, %edi, 4), %eax # load next value
+    cmpl $0, %eax       # check for null-termination value
+    je loop_exit        # exit if so
 
-    cmpl %ebx, %eax                  # compare values
-    jle start_loop                   # continue if value is not the new max
+    cmpl %ebx, %eax     # compare value to current 'max'
+    jle start_loop      # continue if value is not the new max
 
-    movl %eax, %ebx                  # set max to new value
+    movl %eax, %ebx     # set max to new value
     jmp start_loop
 
 loop_exit:
