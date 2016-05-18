@@ -18,8 +18,6 @@ factorial:
     pushl %ebp
     movl %esp, %ebp
 
-    subl $4, %esp           # Reserve a local var (ret)
-
     movl 8(%ebp), %eax      # Input argument -> eax
 
     cmpl $1, %eax           # If input is down to 1, return 1 (base case)
