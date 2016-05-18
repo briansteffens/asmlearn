@@ -1,0 +1,17 @@
+.set LINUX, 0x80
+
+.set SYS_EXIT, 1
+
+.set SYS_EXIT_SUCCESS, 0
+
+.set SYS_FILE_READ, 3
+.set SYS_FILE_WRITE, 4
+.set SYS_FILE_OPEN, 5
+.set SYS_FILE_CLOSE, 6
+
+.set SYS_FILE_PERM_READ, 0
+.set SYS_FILE_PERM_WRITE, 03101
+
+.set STDIN, 0
+.set STDOUT, 1
+.set STDERR, 2
