@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+as --32 functions.asm -o functions.o && \
+ld -m elf_i386 functions.o -o functions && \
+./functions; echo $?
