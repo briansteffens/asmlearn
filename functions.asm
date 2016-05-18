@@ -10,7 +10,7 @@ _start:
     addl $8, %esp    # Reset the stack pointer
     pushl %eax       # Save the result of the call
 
-    pushl $2         # Calculate 5^2
+    pushl $0         # Calculate 5^0
     pushl $5
     call power
     addl $8, %esp
@@ -32,10 +32,10 @@ power:
     movl 8(%ebp), %ebx     # First function argument -> ebx
     movl 12(%ebp), %ecx    # Second function argument -> ecx
 
-    movl %ebx, -4(%ebp)    # Store current result
+    movl $1, -4(%ebp)      # Start with a 1 (2^2 = 1*2*2)
 
 power_loop_start:
-    cmpl $1, %ecx          # End loop if power is 1
+    cmpl $0, %ecx          # End loop if power is 0
     je end_power
 
     movl -4(%ebp), %eax    # Move current result into eax
