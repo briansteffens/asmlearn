@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+as --32 ${1}.asm -o ${1}.o && \
+ld -m elf_i386 ${1}.o -o ${1}.a && \
+./${1}.a; echo $?

@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-as min.s -o min.o && \
-ld min.o -o min && \
-./min; echo $?
