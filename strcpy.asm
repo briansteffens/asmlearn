@@ -39,7 +39,7 @@ strcpy:
     # Put the input buffer in ebx
     movl 12(%ebp), %ebx
 
-    # Put the input buffer in edx
+    # Put the output buffer in edx
     movl 8(%ebp), %edx
 
 strcpy_loop_start:
