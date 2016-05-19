@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-rm *.{a,o}
+rm *.{a,o,so}
+rm a.out
