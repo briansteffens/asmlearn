@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+cp test_file_shift.txt{.orig,}
+cat test_file_shift.txt
+
+as --32 test_file_shift.asm -o test_file_shift.o && \
+ld -m elf_i386 test_file_shift.o -o test_file_shift.a && \
+./test_file_shift.a; echo; echo; cat test_file_shift.txt; echo; echo $?
