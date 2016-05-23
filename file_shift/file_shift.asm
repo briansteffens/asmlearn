@@ -6,12 +6,15 @@
     .lcomm BUFFER, BUFFER_LEN
     .lcomm BUFFER_BLANK, BUFFER_LEN
 
-    .equ LOCAL_BYTES, 24
+    .equ LOCAL_BYTES, 36
     .equ LOCAL_LAST_RET, -4
     .equ LOCAL_FILE, -8
     .equ LOCAL_BYTES_PROCESSED, -12
     .equ LOCAL_BYTES_READ, -16
     .equ LOCAL_CURRENT_BLOCK_SOURCE, -20
+    .equ LOCAL_BLANK_START, -24
+    .equ LOCAL_BLANK_COUNT, -28
+    .equ LOCAL_WRITE_START, -32
 
     .equ PARAM_FILE, 24
     .equ PARAM_OFFSET, 20
@@ -115,6 +118,50 @@ file_shift_only_read_bytes_left:
     movl LOCAL_BYTES_READ(%ebp), %edx
     int $LINUX
 
+    # Calculate write position
+    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %eax
+    movl PARAM_SHIFT(%ebp), %ecx
+    addl %eax, %ecx
+    movl %ecx, LOCAL_WRITE_START(%ebp)
+
+#---OVERLAP CHECKING-----------------------------------------------------------
+    # Set default blank start to read position
+    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %eax
+    movl %eax, LOCAL_BLANK_START(%ebp)
+
+    # Set default blank count to total bytes read
+    movl LOCAL_BYTES_READ(%ebp), %eax
+    movl %eax, LOCAL_BLANK_COUNT(%ebp)
+
+    # Check if we're shifting forward or backward
+    cmpl $0, PARAM_SHIFT(%ebp)
+    jg file_shift_forward_overlap
+
+    # Shifting backward - do overlap checking of end
+
+    jmp file_shift_overlap_checking_done
+
+    # Shifting forward - do overlap checking of beginning
+file_shift_forward_overlap:
+    # Calculate blank_count = write_pos - read_pos
+    movl LOCAL_WRITE_START(%ebp), %eax
+    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %ebx
+    subl %ebx, %eax
+
+    # Check if blank_count > total chars read
+    movl LOCAL_BYTES_READ(%ebp), %ebx
+    cmpl %ebx, %eax
+    jle file_shift_forward_overlap_count_done
+
+    # Apply ceiling (blank_count = chars_read)
+    movl %ebx, %eax
+
+file_shift_forward_overlap_count_done:
+    # Save final decided value back to local
+    movl %eax, LOCAL_BLANK_COUNT(%ebp)
+
+file_shift_overlap_checking_done:
+
     # Seek back to source position
     movl $SYS_FILE_SEEK, %eax
     movl PARAM_FILE(%ebp), %ebx
@@ -130,21 +177,17 @@ file_shift_only_read_bytes_left:
     movl $SYS_FILE_WRITE, %eax
     movl PARAM_FILE(%ebp), %ebx
     movl $BUFFER_BLANK, %ecx
-    movl LOCAL_BYTES_READ(%ebp), %edx
+    movl LOCAL_BLANK_COUNT(%ebp), %edx
     int $LINUX
 
     # Check for error code
     cmpl $0, %eax
     jl shift_file_err_file_write
 
-    # Calculate write position
-    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %eax
-    movl PARAM_SHIFT(%ebp), %ecx
-    addl %eax, %ecx
-
     # Seek to write position
     movl $SYS_FILE_SEEK, %eax
     movl PARAM_FILE(%ebp), %ebx
+    movl LOCAL_WRITE_START(%ebp), %ecx
     movl $SYS_FILE_SEEK_SET, %edx
     int $LINUX
 
