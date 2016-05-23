@@ -6,7 +6,7 @@
     .lcomm BUFFER, BUFFER_LEN
     .lcomm BUFFER_BLANK, BUFFER_LEN
 
-    .equ LOCAL_BYTES, 36
+    .equ LOCAL_BYTES, 40
     .equ LOCAL_LAST_RET, -4
     .equ LOCAL_FILE, -8
     .equ LOCAL_BYTES_PROCESSED, -12
@@ -15,6 +15,7 @@
     .equ LOCAL_BLANK_START, -24
     .equ LOCAL_BLANK_COUNT, -28
     .equ LOCAL_WRITE_START, -32
+    .equ LOCAL_WRITE_END, -36
 
     .equ PARAM_FILE, 24
     .equ PARAM_OFFSET, 20
@@ -137,13 +138,37 @@ file_shift_only_read_bytes_left:
     cmpl $0, PARAM_SHIFT(%ebp)
     jg file_shift_forward_overlap
 
-    # Shifting backward - do overlap checking of end
+#---Shifting backward - do overlap checking of end-----------------------------
+
+    # Calculate write_end (write_pos + read_chars)
+    movl LOCAL_WRITE_START(%ebp), %eax
+    movl LOCAL_BYTES_READ(%ebp), %ebx
+    addl %ebx, %eax
+    movl %eax, LOCAL_WRITE_END(%ebp)
+
+    # Calculate the overlap between write and read (write_end - read_pos)
+    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %ebx
+    subl %ebx, %eax
+
+    # Skip processing if there's no overlap
+    cmpl $0, %eax
+    jle file_shift_overlap_checking_done
+
+    # blank_count = bytes_read - overlap
+    movl LOCAL_BYTES_READ(%ebp), %ebx
+    subl %eax, %ebx
+    movl %ebx, LOCAL_BLANK_COUNT(%ebp)
+
+    # blank_start = write_end + 1
+    movl LOCAL_WRITE_END(%ebp), %eax
+    incl %eax
+    movl %eax, LOCAL_BLANK_START(%ebp)
 
     jmp file_shift_overlap_checking_done
 
-    # Shifting forward - do overlap checking of beginning
+#---Shifting forward - do overlap checking of beginning------------------------
 file_shift_forward_overlap:
-    # Calculate blank_count = write_pos - read_pos
+    # Calculate blank_count = write_pos - read_chars
     movl LOCAL_WRITE_START(%ebp), %eax
     movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %ebx
     subl %ebx, %eax
