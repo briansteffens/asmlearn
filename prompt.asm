@@ -87,20 +87,6 @@ prompt:
 
     jmp prompt_ret
 
-## Save bytes read
-#    movl %eax, LOCAL_BYTES_READ(%ebp)
-#
-## Print the previously-read string
-#    movl $SYS_FILE_WRITE, %eax
-#    movl $STDOUT, %ebx
-#    movl $FIRST_NAME, %ecx
-#    movl LOCAL_BYTES_READ(%ebp), %edx
-#    int $LINUX
-#
-## Check for error code
-#    cmpl $0, %eax
-#    jl err
-
 prompt_err_out_of_bounds:
     movl $-1, %eax
 
