@@ -2,24 +2,10 @@
 
 .section .bss
 
-    .equ LOCAL_BYTES, 40
-#    .equ LOCAL_LAST_RET, -4
-
     .equ PARAM_PROMPT, 20
     .equ PARAM_PROMPT_LEN, 16
     .equ PARAM_BUFFER, 12
     .equ PARAM_BUFFER_LEN, 8
-
-.section .data
-
-    ERR_FILE_INPUT_READ: .ascii "Error reading from file\n"
-    .equ ERR_FILE_INPUT_READ_LEN, 24
-
-    ERR_FILE_OUTPUT_WRITE: .ascii "Error writing to file\n"
-    .equ ERR_FILE_OUTPUT_WRITE_LEN, 22
-
-    ERR_FILE_SEEK: .ascii "Error seeking within file\n"
-    .equ ERR_FILE_SEEK_LEN, 26
 
 .section .text
 
@@ -45,7 +31,6 @@
 prompt:
     pushl %ebp
     movl %esp, %ebp
-    subl $LOCAL_BYTES, %esp
 
 # Write prompt text
     movl $SYS_FILE_WRITE, %eax
