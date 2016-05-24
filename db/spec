@@ -1,0 +1,24 @@
+The db file format is made up of a header (record count) followed by that
+number of records.
+
+Example:
+
+Offset 0, bytes 4 - RECORD_COUNT
+
+    The total number of records in the file
+
+Offset 4, bytes 32 - RECORD 0, FIRST_NAME
+
+    The first name field for the first record
+
+Offset 36, bytes 32 - RECORD 0, LAST_NAME
+
+    The last name field for the first record
+
+Offset 68, bytes 4 - RECORD 0, AGE
+
+    The age field for the first record
+
+Each record is 68 bytes.
+
+Each record starts at offset ((RECORD_INDEX - 1) * 68) + 4
