@@ -10,8 +10,8 @@
     .equ LOCAL_LAST_RET, -4
     .equ LOCAL_FILE, -8
     .equ LOCAL_BYTES_PROCESSED, -12
-    .equ LOCAL_BYTES_READ, -16
-    .equ LOCAL_CURRENT_BLOCK_SOURCE, -20
+    .equ LOCAL_READ_START, -16
+    .equ LOCAL_READ_COUNT, -20
     .equ LOCAL_BLANK_START, -24
     .equ LOCAL_BLANK_COUNT, -28
     .equ LOCAL_WRITE_START, -32
@@ -71,7 +71,7 @@ file_shift_loop_start:
     movl PARAM_OFFSET(%ebp), %ecx
     movl LOCAL_BYTES_PROCESSED(%ebp), %ebx
     addl %ebx, %ecx
-    movl %ecx, LOCAL_CURRENT_BLOCK_SOURCE(%ebp)
+    movl %ecx, LOCAL_READ_START(%ebp)
 
     movl $SYS_FILE_SEEK, %eax
     movl PARAM_FILE(%ebp), %ebx
@@ -95,13 +95,13 @@ file_shift_loop_start:
     movl $BUFFER_LEN, %eax
 
 file_shift_only_read_bytes_left:
-    movl %eax, LOCAL_BYTES_READ(%ebp)
+    movl %eax, LOCAL_READ_COUNT(%ebp)
 
     # Read from input file
     movl $SYS_FILE_READ, %eax
     movl PARAM_FILE(%ebp), %ebx
     movl $BUFFER, %ecx
-    movl LOCAL_BYTES_READ(%ebp), %edx
+    movl LOCAL_READ_COUNT(%ebp), %edx
     int $LINUX
 
     # Check for error codes
@@ -109,76 +109,85 @@ file_shift_only_read_bytes_left:
     jl shift_file_err_file_read
 
     # Didn't read as many bytes as requested, error
-    cmpl LOCAL_BYTES_READ(%ebp), %eax
+    cmpl LOCAL_READ_COUNT(%ebp), %eax
     jl shift_file_err_file_read
 
     # Print buffer
     movl $SYS_FILE_WRITE, %eax
     movl $STDOUT, %ebx
     movl $BUFFER, %ecx
-    movl LOCAL_BYTES_READ(%ebp), %edx
+    movl LOCAL_READ_COUNT(%ebp), %edx
     int $LINUX
 
     # Calculate write position
-    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %eax
+    movl LOCAL_READ_START(%ebp), %eax
     movl PARAM_SHIFT(%ebp), %ecx
     addl %eax, %ecx
     movl %ecx, LOCAL_WRITE_START(%ebp)
 
-#---OVERLAP CHECKING-----------------------------------------------------------
+    # Overlap checking
+
+    # When a block of bytes are moved, the source bytes are blanked out.
+    # However, if the target bytes to be written overlap with the source bytes,
+    # there's no point in blanking bytes that are going to be overwritten
+    # anyway. So check for overlap and restrict the blanking operation to the
+    # bytes that actually need it.
+
     # Set default blank start to read position
-    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %eax
+    movl LOCAL_READ_START(%ebp), %eax
     movl %eax, LOCAL_BLANK_START(%ebp)
 
     # Set default blank count to total bytes read
-    movl LOCAL_BYTES_READ(%ebp), %eax
+    movl LOCAL_READ_COUNT(%ebp), %eax
     movl %eax, LOCAL_BLANK_COUNT(%ebp)
 
-    # Check if we're shifting forward or backward
+    # Check if we're shifting forward or backward (different logic for these
+    # two cases)
     cmpl $0, PARAM_SHIFT(%ebp)
     jg file_shift_forward_overlap
 
-#---Shifting backward - do overlap checking of end-----------------------------
+    # Shifting backward - do overlap checking of end
 
-    # Calculate write_end (write_pos + read_chars)
+    # WRITE_END = WRITE_START + READ_COUNT
     movl LOCAL_WRITE_START(%ebp), %eax
-    movl LOCAL_BYTES_READ(%ebp), %ebx
+    movl LOCAL_READ_COUNT(%ebp), %ebx
     addl %ebx, %eax
     movl %eax, LOCAL_WRITE_END(%ebp)
 
-    # Calculate the overlap between write and read (write_end - read_pos)
-    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %ebx
+    # Calculate the overlap between write and read (WRITE_END - READ_START)
+    movl LOCAL_READ_START(%ebp), %ebx
     subl %ebx, %eax
 
     # Skip processing if there's no overlap
     cmpl $0, %eax
     jle file_shift_overlap_checking_done
 
-    # blank_count = bytes_read - overlap
-    movl LOCAL_BYTES_READ(%ebp), %ebx
+    # BLANK_COUNT = READ_COUNT - overlap
+    movl LOCAL_READ_COUNT(%ebp), %ebx
     subl %eax, %ebx
     movl %ebx, LOCAL_BLANK_COUNT(%ebp)
 
-    # blank_start = write_end + 1
+    # BLANK_START = WRITE_END + 1
     movl LOCAL_WRITE_END(%ebp), %eax
     incl %eax
     movl %eax, LOCAL_BLANK_START(%ebp)
 
     jmp file_shift_overlap_checking_done
 
-#---Shifting forward - do overlap checking of beginning------------------------
+    # Shifting forward - do overlap checking of beginning
+
 file_shift_forward_overlap:
-    # Calculate blank_count = write_pos - read_chars
+    # Calculate BLANK_COUNT = WRITE_START - READ_START
     movl LOCAL_WRITE_START(%ebp), %eax
-    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %ebx
+    movl LOCAL_READ_START(%ebp), %ebx
     subl %ebx, %eax
 
-    # Check if blank_count > total chars read
-    movl LOCAL_BYTES_READ(%ebp), %ebx
+    # Check if BLANK_COUNT > READ_COUNT
+    movl LOCAL_READ_COUNT(%ebp), %ebx
     cmpl %ebx, %eax
     jle file_shift_forward_overlap_count_done
 
-    # Apply ceiling (blank_count = chars_read)
+    # Apply ceiling (BLANK_COUNT = READ_COUNT)
     movl %ebx, %eax
 
 file_shift_forward_overlap_count_done:
@@ -190,7 +199,7 @@ file_shift_overlap_checking_done:
     # Seek back to source position
     movl $SYS_FILE_SEEK, %eax
     movl PARAM_FILE(%ebp), %ebx
-    movl LOCAL_CURRENT_BLOCK_SOURCE(%ebp), %ecx
+    movl LOCAL_READ_START(%ebp), %ecx
     movl $SYS_FILE_SEEK_SET, %edx
     int $LINUX
 
@@ -224,7 +233,7 @@ file_shift_overlap_checking_done:
     movl $SYS_FILE_WRITE, %eax
     movl PARAM_FILE(%ebp), %ebx
     movl $BUFFER, %ecx
-    movl LOCAL_BYTES_READ(%ebp), %edx
+    movl LOCAL_READ_COUNT(%ebp), %edx
     int $LINUX
 
     # Check for error code
@@ -233,7 +242,7 @@ file_shift_overlap_checking_done:
 
     # Add bytes processed to running total
     movl LOCAL_BYTES_PROCESSED(%ebp), %eax
-    movl LOCAL_BYTES_READ(%ebp), %ebx
+    movl LOCAL_READ_COUNT(%ebp), %ebx
     addl %ebx, %eax
     movl %eax, LOCAL_BYTES_PROCESSED(%ebp)
 

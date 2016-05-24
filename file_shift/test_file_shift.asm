@@ -34,7 +34,7 @@ _start:
     pushl LOCAL_FILE(%ebp)
     pushl $12
     pushl $5
-    pushl $3
+    pushl $-3
     pushl $32                   # Space
     call file_shift
     addl $16, %esp
