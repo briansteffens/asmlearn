@@ -21,3 +21,5 @@
 .set STDIN, 0
 .set STDOUT, 1
 .set STDERR, 2
+
+.set ASCII_LF, 10
