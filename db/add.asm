@@ -107,7 +107,7 @@ _start:
 # Read record count
     movl $SYS_FILE_READ, %eax
     movl LOCAL_FILE(%ebp), %ebx
-    movl $BUFFER, %ecx
+    leal LOCAL_RECORD_COUNT(%ebp), %ecx
     movl $4, %edx
     int $LINUX
 
@@ -115,40 +115,10 @@ _start:
     cmpl $0, %eax
     jl err
 
-# Load record count
-    movl $BUFFER, %ebx                      # Source (byte buffer)
-    movl $3, %ecx                           # Byte index
-
-add_load_record_count_loop:
-    movb (%ebx, %ecx, 1), %dl
-    movb %dl, LOCAL_RECORD_COUNT(%ebp, %ecx, 1)
-
-# Decrement byte index
-    decl %ecx
-
-# Loop while ecx >= 0
-    cmpl $0, %ecx
-    jge add_load_record_count_loop
-
 # Increment record count since we're adding a record
     movl LOCAL_RECORD_COUNT(%ebp), %eax
     incl %eax
     movl %eax, LOCAL_RECORD_COUNT(%ebp)
-
-# Copy RECORD_COUNT to BUFFER for writing
-    movl $BUFFER, %ebx                      # Target (byte buffer)
-    movl $3, %ecx                           # Byte index
-
-add_save_record_count_loop:
-    movb LOCAL_RECORD_COUNT(%ebp, %ecx, 1), %dl
-    movb %dl, (%ebx, %ecx, 1)
-
-# Decrement byte index
-    decl %ecx
-
-# Loop while ecx >= 0
-    cmpl $0, %ecx
-    jge add_save_record_count_loop
 
 # Seek to beginning of file to rewrite new record count
     movl $SYS_FILE_SEEK, %eax
@@ -164,7 +134,7 @@ add_save_record_count_loop:
 # Write the new record count to the file
     movl $SYS_FILE_WRITE, %eax
     movl LOCAL_FILE(%ebp), %ebx
-    movl $BUFFER, %ecx
+    leal LOCAL_RECORD_COUNT(%ebp), %ecx
     movl $4, %edx
     int $LINUX
 
@@ -205,25 +175,10 @@ add_save_record_count_loop:
     cmpl $0, %eax
     jl err
 
-# Copy AGE to BUFFER for writing
-    movl $BUFFER, %ebx                      # Target (byte buffer)
-    movl $3, %ecx                           # Byte index
-
-add_save_record_age_loop:
-    movb LOCAL_AGE(%ebp, %ecx, 1), %dl
-    movb %dl, (%ebx, %ecx, 1)
-
-# Decrement byte index
-    decl %ecx
-
-# Loop while ecx >= 0
-    cmpl $0, %ecx
-    jge add_save_record_age_loop
-
-# Write age to file
+# Write AGE to file
     movl $SYS_FILE_WRITE, %eax
     movl LOCAL_FILE(%ebp), %ebx
-    movl $BUFFER, %ecx
+    leal LOCAL_AGE(%ebp), %ecx
     movl $4, %edx
     int $LINUX
 
