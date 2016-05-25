@@ -172,6 +172,65 @@ add_save_record_count_loop:
     cmpl $0, %eax
     jl err
 
+# Seek to end of file
+    movl $SYS_FILE_SEEK, %eax
+    movl LOCAL_FILE(%ebp), %ebx
+    movl $0, %ecx
+    movl $SYS_FILE_SEEK_END, %edx
+    int $LINUX
+
+# Error check
+    cmpl $0, %eax
+    jl err
+
+# Write first name to file
+    movl $SYS_FILE_WRITE, %eax
+    movl LOCAL_FILE(%ebp), %ebx
+    movl $FIRST_NAME, %ecx
+    movl $RECORD_FIRST_NAME_LEN, %edx
+    int $LINUX
+
+# Error check
+    cmpl $0, %eax
+    jl err
+
+# Write last name to file
+    movl $SYS_FILE_WRITE, %eax
+    movl LOCAL_FILE(%ebp), %ebx
+    movl $LAST_NAME, %ecx
+    movl $RECORD_LAST_NAME_LEN, %edx
+    int $LINUX
+
+# Error check
+    cmpl $0, %eax
+    jl err
+
+# Copy AGE to BUFFER for writing
+    movl $BUFFER, %ebx                      # Target (byte buffer)
+    movl $3, %ecx                           # Byte index
+
+add_save_record_age_loop:
+    movb LOCAL_AGE(%ebp, %ecx, 1), %dl
+    movb %dl, (%ebx, %ecx, 1)
+
+# Decrement byte index
+    decl %ecx
+
+# Loop while ecx >= 0
+    cmpl $0, %ecx
+    jge add_save_record_age_loop
+
+# Write age to file
+    movl $SYS_FILE_WRITE, %eax
+    movl LOCAL_FILE(%ebp), %ebx
+    movl $BUFFER, %ecx
+    movl $4, %edx
+    int $LINUX
+
+# Error check
+    cmpl $0, %eax
+    jl err
+
 # Close the db file
     movl $SYS_FILE_CLOSE, %eax
     movl LOCAL_FILE(%ebp), %ebx
@@ -219,5 +278,3 @@ exit:
 # Exit program
     movl $SYS_EXIT, %eax
     int $LINUX
-
-
