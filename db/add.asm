@@ -153,8 +153,8 @@ add_save_record_count_loop:
 # Seek to beginning of file to rewrite new record count
     movl $SYS_FILE_SEEK, %eax
     movl LOCAL_FILE(%ebp), %ebx
-    movl $SYS_FILE_SEEK_SET, %ecx
-    movl $0, %edx
+    movl $0, %ecx
+    movl $SYS_FILE_SEEK_SET, %edx
     int $LINUX
 
 # Error check
