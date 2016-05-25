@@ -67,9 +67,6 @@ prompt:
 # Blank newline
     movb $0, (%ebx, %eax, 1)
 
-# Undo decrement
-    incl %eax
-
     jmp prompt_ret
 
 prompt_err_out_of_bounds:

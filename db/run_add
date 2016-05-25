@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+as --32 ../str_to_int.asm -o ../str_to_int.o && \
+as --32 add.asm -o add.o && \
+
+ld -m elf_i386 ../str_to_int.o add.o -o add && \
+
+./add; echo; echo "Status: $?"
