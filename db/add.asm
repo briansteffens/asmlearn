@@ -1,5 +1,4 @@
-# Creates the db file if it doesn't exist and resets is (deleting all records)
-# if it does.
+# Appends a new record to the db file
 
 .include "db.common.asm"
 .include "../prompt.asm"
