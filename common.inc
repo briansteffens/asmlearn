@@ -23,3 +23,4 @@
 .set STDERR, 2
 
 .set ASCII_LF, 10
+.set ASCII_DIGIT_0, 48

@@ -3,8 +3,9 @@
 as --32 strlen.asm -o strlen.o && \
 as --32 strstr.asm -o strstr.o && \
 as --32 strcpy.asm -o strcpy.o && \
+as --32 int_to_str.asm -o int_to_str.o && \
 as --32 ${1}.asm -o ${1}.o && \
 
-ld -m elf_i386 strlen.o strstr.o strcpy.o ${1}.o -o a.out && \
+ld -m elf_i386 strlen.o strstr.o strcpy.o int_to_str.o ${1}.o -o a.out && \
 
-./a.out; echo $?
+./a.out; LAST_STATUS=$?; echo; echo "Status: $LAST_STATUS"
