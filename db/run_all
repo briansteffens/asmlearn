@@ -3,8 +3,9 @@
 as --32 ../strcpy.asm -o ../strcpy.o && \
 as --32 ../int_to_str.asm -o ../int_to_str.o && \
 as --32 ../strlen.asm -o ../strlen.o && \
+as --32 ../strdebug.asm -o ../strdebug.o && \
 as --32 all.asm -o all.o && \
 
-ld -m elf_i386 ../strcpy.o ../int_to_str.o ../strlen.o all.o -o all && \
+ld -m elf_i386 ../strcpy.o ../int_to_str.o ../strlen.o ../strdebug.o all.o -o all && \
 
 ./all; echo "Status: $?"

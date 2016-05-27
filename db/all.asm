@@ -4,14 +4,14 @@
 
 .section .data
 
-    LABEL_FIRST_NAME: .ascii "First name: \0"
-    .equ LABEL_FIRST_NAME_LEN, 12
+    LABEL_FIRST_NAME: .ascii "First: \0"
+    .equ LABEL_FIRST_NAME_LEN, 7
 
-    LABEL_LAST_NAME: .ascii "Last name:  \0"
-    .equ LABEL_LAST_NAME_LEN, 12
+    LABEL_LAST_NAME: .ascii "Last:  \0"
+    .equ LABEL_LAST_NAME_LEN, 7
 
-    LABEL_AGE: .ascii "Age:        \0"
-    .equ LABEL_AGE_LEN, 12
+    LABEL_AGE: .ascii "Age:   \0"
+    .equ LABEL_AGE_LEN, 7
 
     NEWLINE: .ascii "\n"
 
@@ -37,19 +37,19 @@ _start:
     pushl $LABEL_FIRST_NAME
     pushl $FIELD_FIRST_NAME
     call strcpy
-    subl $8, %esp
+    addl $8, %esp
 
 # Write the last name label into field buffer
     pushl $LABEL_LAST_NAME
     pushl $FIELD_LAST_NAME
     call strcpy
-    subl $8, %esp
+    addl $8, %esp
 
 # Write the age label into field buffer
     pushl $LABEL_AGE
     pushl $FIELD_AGE
     call strcpy
-    subl $8, %esp
+    addl $8, %esp
 
 # Open the db file for reading/writing
     movl $SYS_FILE_OPEN, %eax
@@ -97,7 +97,7 @@ all_read_record:
 
 # Append newline
     addl %eax, %ecx
-    movl $ASCII_LF, (, %ecx, 1)
+    movb $ASCII_LF, (, %ecx, 1)
 
 # Write first name
     movl $FIELD_FIRST_NAME, %eax
@@ -124,7 +124,7 @@ all_read_record:
 
 # Append newline
     addl %eax, %ecx
-    movl $ASCII_LF, (, %ecx, 1)
+    movb $ASCII_LF, (, %ecx, 1)
 
 # Write last name
     movl $FIELD_LAST_NAME, %eax

@@ -33,7 +33,7 @@ strdebug:
     pushl %ebp
     movl %esp, %ebp
     subl $LOCAL_BYTES, %esp
-aaa:
+
     movl $0, %ecx
 
 strdebug_loop_start:
@@ -54,7 +54,7 @@ strdebug_loop_start:
     cmpl $0, %eax
     jne strdebug_err
 
-    movl %ecx, %edx
+    movl %ebx, %edx
     movl $BUFFER, %ecx
     movb $ASCII_LF, (%ecx, %edx, 1)
     incl %edx
