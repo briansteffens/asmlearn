@@ -151,6 +151,43 @@ allocate_ret:
     ret
 
 
+#   Function reallocate
+#       Reallocate a segment of memory with a new size.
+#
+#   Stack arguments:
+#       SEGMENT_ADDR - The memory address to reallocate. Must have been
+#                      previously allocated by the allocate function.
+#       NEW_SIZE     - The new size in bytes to resize the segment to.
+#
+#   Return values:
+#       eax          - 0 if failed, otherwise the new address of the segment.
+
+.globl reallocate
+.type reallocate, @function
+.equ SEGMENT_ADDR, 8
+.equ NEW_SIZE, 12
+reallocate:
+    pushl %ebp
+    movl %esp, %ebp
+
+# Allocate a new segment of the requested size
+    pushl NEW_SIZE(%esp)
+    call allocate
+    addl $4, %esp
+    cmpl $0, %eax
+    je reallocate_ret
+
+# Mark the original segment available
+    movl NEW_SIZE(%esp), %ebx
+    subl $HEADER_SIZE, %ebx
+    movl $AVAILABLE, HDR_AVAIL_OFFSET(%ebx)
+
+reallocate_ret:
+    movl %ebp, %esp
+    popl %ebp
+    ret
+
+
 #   Function deallocate
 #       Free a segment of memory previously allocated by the allocate function
 #

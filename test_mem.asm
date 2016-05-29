@@ -14,7 +14,7 @@ _start:
     call allocate_init
 
 # Allocate a string
-    pushl $255
+    pushl $4
     call allocate
     addl $4, %esp
     cmpl $0, %eax
@@ -37,6 +37,34 @@ _start:
     movl $STDOUT, %ebx
     movl string, %ecx
     movl $3, %edx
+    int $LINUX
+    cmpl $0, %eax
+    jl err
+
+# Increase segment size
+    pushl string
+    pushl $7
+    call reallocate
+    addl $8, %esp
+    cmpl $0, %eax
+    jl err
+
+# Add more text to string
+    movl string, %ebx
+    movl $3, %ecx
+    movb $58, (%ebx, %ecx, 1)
+    incl %ecx
+    movb $68, (%ebx, %ecx, 1)
+    incl %ecx
+    movb $ASCII_LF, (%ebx, %ecx, 1)
+    incl %ecx
+    movb $0, (%ebx, %ecx, 1)
+
+# Write string to stdout
+    movl $SYS_FILE_WRITE, %eax
+    movl $STDOUT, %ebx
+    movl string, %ecx
+    movl $6, %edx
     int $LINUX
     cmpl $0, %eax
     jl err
