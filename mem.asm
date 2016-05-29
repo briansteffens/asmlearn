@@ -182,6 +182,19 @@ reallocate:
     pushl %ebp
     movl %esp, %ebp
 
+# Don't bother reallocating if the size won't change
+    movl NEW_SIZE(%esp), %eax
+    movl SEGMENT_ADDR(%esp), %ebx
+    subl $HEADER_SIZE, %ebx
+    cmpl %eax, HDR_SIZE_OFFSET(%ebx)
+    jne reallocate_size_change
+
+# Size wouldn't change, return original address
+    movl SEGMENT_ADDR(%esp), %eax
+    jmp reallocate_ret
+
+reallocate_size_change:
+
 # Allocate a new segment of the requested size
     pushl NEW_SIZE(%esp)
     call allocate
