@@ -164,8 +164,8 @@ allocate_ret:
 
 .globl reallocate
 .type reallocate, @function
-.equ SEGMENT_ADDR, 8
-.equ NEW_SIZE, 12
+.equ SEGMENT_ADDR, 12
+.equ NEW_SIZE, 8
 reallocate:
     pushl %ebp
     movl %esp, %ebp
@@ -177,8 +177,36 @@ reallocate:
     cmpl $0, %eax
     je reallocate_ret
 
+# Figure out if the segment grew or shrunk
+    movl SEGMENT_ADDR(%esp), %ebx
+    subl $HEADER_SIZE, %ebx
+    movl HDR_SIZE_OFFSET(%ebx), %ecx
+    movl NEW_SIZE(%esp), %edx
+    cmpl %ecx, %edx
+    jg reallocate_size_increased
+
+# Segment shrunk, only copy NEW_SIZE bytes
+    movl %edx, %ecx
+
+# Segment grew, copy the original number of bytes
+reallocate_size_increased:
+
+# Copy bytes from old segment to new
+    addl $HEADER_SIZE, %ebx
+
+reallocate_copy_loop:
+    decl %ecx
+    cmpl $0, %ecx
+    jl reallocate_copy_loop_done
+
+    movb (%ebx, %ecx, 1), %dl
+    movb %dl, (%eax, %ecx, 1)
+
+    jmp reallocate_copy_loop
+
+reallocate_copy_loop_done:
+
 # Mark the original segment available
-    movl NEW_SIZE(%esp), %ebx
     subl $HEADER_SIZE, %ebx
     movl $AVAILABLE, HDR_AVAIL_OFFSET(%ebx)
 

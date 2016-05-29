@@ -48,6 +48,7 @@ _start:
     addl $8, %esp
     cmpl $0, %eax
     jl err
+    movl %eax, string
 
 # Add more text to string
     movl string, %ebx
