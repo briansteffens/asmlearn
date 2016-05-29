@@ -14,6 +14,9 @@
 
 .section .text
 
+#   Function allocate_init
+#       Initialize the memory management system.
+
 .global allocate_init
 .type allocate_init, @function
 allocate_init:
@@ -53,6 +56,15 @@ allocate_init:
 allocate:
     pushl %ebp
     movl %esp, %ebp
+
+# Call allocate_init if necessary
+    movl heap_begin, %eax
+    cmpl $0, heap_begin
+    jne allocate_init_done
+
+    call allocate_init
+
+allocate_init_done:
 
 # Input parameter - bytes to allocate
     movl ST_MEM_SIZE(%ebp), %ecx

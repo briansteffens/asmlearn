@@ -10,9 +10,6 @@
 _start:
     movl %esp, %ebp
 
-# Init memory manager
-    call allocate_init
-
 # Allocate a string
     pushl $4
     call allocate
