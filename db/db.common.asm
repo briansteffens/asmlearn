@@ -1,4 +1,4 @@
-.include "../common.inc"
+.include "../common.asm"
 
 .section .data
 
