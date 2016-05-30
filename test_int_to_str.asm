@@ -5,6 +5,8 @@
     .equ BUFFER_LEN, 16
     .lcomm BUFFER, BUFFER_LEN
 
+    counter: .long 0
+
 .section .text
 
 .globl _start
@@ -18,7 +20,7 @@ _start:
 
     cmpl $0, %eax
     jne err
-aaa:
+
     movl %ebx, %edx
     movl $SYS_FILE_WRITE, %eax
     movl $STDOUT, %ebx
