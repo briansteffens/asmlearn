@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+as --32 gui.asm -o gui.o
+gcc -m32 gui.o `pkg-config --libs gnomeui` -o a.out
