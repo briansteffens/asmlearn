@@ -1,264 +1,262 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .data
+section .bss
 
-    heap_begin: .long 0
-    current_break: .long 0
+    heap_begin resq 1
+    current_break resq 1
 
-    .equ HEADER_SIZE, 8
-    .equ HDR_AVAIL_OFFSET, 0
-    .equ HDR_SIZE_OFFSET, 4
+section .data
 
-    .equ UNAVAILABLE, 0
-    .equ AVAILABLE, 1
+    HEADER_SIZE equ 16
+    HDR_AVAIL_OFFSET equ 0
+    HDR_SIZE_OFFSET equ 8
 
-.section .text
+    UNAVAILABLE equ 0
+    AVAILABLE equ 1
 
-#   Function allocate_init
-#       Initialize the memory management system.
+section .text
 
-.global allocate_init
-.type allocate_init, @function
+;   Function allocate_init
+;       Initialize the memory management system.
+
+global allocate_init:function
 allocate_init:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-# Look up the current break
-    movl $SYS_BRK, %eax
-    movl $0, %ebx
-    int $LINUX
+; Look up the current break
+    mov rax, SYS_BRK
+    mov rbx, 0
+    int LINUX
 
-# Store the first valid address
-    incl %eax
-    movl %eax, current_break
+; Store the first valid address
+    inc rax
+    mov [current_break], rax
 
-# Same value is the heap_begin
-    movl %eax, heap_begin
+; Same value is the heap_begin
+    mov [heap_begin], rax
 
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret
 
 
-#   Function allocate
-#       Allocate a segment of memory on the heap.
-#
-#   Stack arguments:
-#       MEM_SIZE  - The number of bytes to allocate
-#
-#   Return values:
-#       eax       - 0 if failed, otherwise the address of the newly-allocated
-#                   segment.
+;   Function allocate
+;       Allocate a segment of memory on the heap.
+;
+;   Stack arguments:
+;       MEM_SIZE  - The number of bytes to allocate
+;
+;   Return values:
+;       rax       - 0 if failed, otherwise the address of the newly-allocated
+;                   segment.
 
-.globl allocate
-.type allocate, @function
-.equ ST_MEM_SIZE, 8         # Stack position of memory size to allocate
+global allocate:function
+    ST_MEM_SIZE equ 16         ; Stack position of memory size to allocate
 allocate:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-# Call allocate_init if necessary
-    movl heap_begin, %eax
-    cmpl $0, heap_begin
+; Call allocate_init if necessary
+    mov rax, [heap_begin]
+    cmp rax, 0
     jne allocate_init_done
 
     call allocate_init
 
 allocate_init_done:
 
-# Input parameter - bytes to allocate
-    movl ST_MEM_SIZE(%ebp), %ecx
+; Input parameter - bytes to allocate
+    mov rcx, [rbp + ST_MEM_SIZE]
 
-# Current search position, looking for a block to reuse
-    movl heap_begin, %eax
+; Current search position, looking for a block to reuse
+    mov rax, [heap_begin]
 
-# Current break
-    movl current_break, %ebx
+; Current break
+    mov rbx, [current_break]
 
 
-# Each iteration of this loop inspects a memory block looking for an available
-# one with enough space to satisfy the request.
+; Each iteration of this loop inspects a memory block looking for an available
+; one with enough space to satisfy the request.
 allocate_loop:
 
-# If we get to the end of the allocated memory without finding a candidate,
-# request more memory from the OS.
-    cmpl %ebx, %eax
+; If we get to the end of the allocated memory without finding a candidate,
+; request more memory from the OS.
+    cmp rax, rbx
     je allocate_more
 
-# Get the size of this block
-    movl HDR_SIZE_OFFSET(%eax), %edx
+; Get the size of this block
+    mov rdx, [rax + HDR_SIZE_OFFSET]
 
-# Continue if the block is unavailable
-    cmpl $UNAVAILABLE, HDR_AVAIL_OFFSET(%eax)
+; Continue if the block is unavailable
+    cmp qword [rax + HDR_AVAIL_OFFSET], UNAVAILABLE
     je allocate_next_block
 
-# Block is available. See if it's big enough for the request.
-    cmpl %edx, %ecx
+; Block is available. See if it's big enough for the request.
+    cmp rcx, rdx
     jle allocate_here
 
 
 allocate_next_block:
 
-# Move the pointer past this block and to the next one.
-    addl $HEADER_SIZE, %eax
-    addl %edx, %eax
+; Move the pointer past this block and to the next one.
+    add rax, HEADER_SIZE
+    add rax, rdx
     jmp allocate_loop
 
 
 allocate_here:
 
-# Mark the block as unavailable
-    movl $UNAVAILABLE, HDR_AVAIL_OFFSET(%eax)
+; Mark the block as unavailable
+    mov qword [rax + HDR_AVAIL_OFFSET], UNAVAILABLE
 
-# Return the actual data, not the header
-    addl $HEADER_SIZE, %eax
+; Return the actual data, not the header
+    add rax, HEADER_SIZE
 
     jmp allocate_ret
 
 
 allocate_more:
 
-# Move past the last block
-    addl $HEADER_SIZE, %ebx
-    addl %ecx, %ebx
+; Move past the last block
+    add rbx, HEADER_SIZE
+    add rbx, rcx
 
-    pushl %eax
-    pushl %ecx
-    pushl %ebx
+    push rax
+    push rcx
+    push rbx
 
-# Request more memory from OS
-    movl $SYS_BRK, %eax
-    int $LINUX
+; Request more memory from OS
+    mov rax, SYS_BRK
+    int LINUX
 
-# If 0, OS is out of memory or just hates us, something like that!
-    cmpl $0, %eax
+; If 0, OS is out of memory or just hates us, something like that!
+    cmp rax, 0
     je allocate_err
 
-    popl %ebx
-    popl %ecx
-    popl %eax
+    pop rbx
+    pop rcx
+    pop rax
 
-# Mark block as unavailable
-    movl $UNAVAILABLE, HDR_AVAIL_OFFSET(%eax)
+; Mark block as unavailable
+    mov qword [rax + HDR_AVAIL_OFFSET], UNAVAILABLE
 
-# Set memory size
-    movl %ecx, HDR_SIZE_OFFSET(%eax)
+; Set memory size
+    mov [rax + HDR_SIZE_OFFSET], rcx
 
-# Move to start of actual memory
-    addl $HEADER_SIZE, %eax
+; Move to start of actual memory
+    mov rax, HEADER_SIZE
 
-# Save new break point
-    movl %ebx, current_break
+; Save new break point
+    mov [current_break], rbx
 
     jmp allocate_ret
 
 
 allocate_err:
-    movl $0, %eax
+    mov rax, 0
 
 
 allocate_ret:
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret
 
 
-#   Function reallocate
-#       Reallocate a segment of memory with a new size.
-#
-#   Stack arguments:
-#       SEGMENT_ADDR - The memory address to reallocate. Must have been
-#                      previously allocated by the allocate function.
-#       NEW_SIZE     - The new size in bytes to resize the segment to.
-#
-#   Return values:
-#       eax          - 0 if failed, otherwise the new address of the segment.
+;   Function reallocate
+;       Reallocate a segment of memory with a new size.
+;
+;   Stack arguments:
+;       SEGMENT_ADDR - The memory address to reallocate. Must have been
+;                      previously allocated by the allocate function.
+;       NEW_SIZE     - The new size in bytes to resize the segment to.
+;
+;   Return values:
+;       rax          - 0 if failed, otherwise the new address of the segment.
 
-.globl reallocate
-.type reallocate, @function
-.equ SEGMENT_ADDR, 12
-.equ NEW_SIZE, 8
+global reallocate:function
+    SEGMENT_ADDR equ 24
+    NEW_SIZE equ 16
 reallocate:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-# Don't bother reallocating if the size won't change
-    movl NEW_SIZE(%esp), %eax
-    movl SEGMENT_ADDR(%esp), %ebx
-    subl $HEADER_SIZE, %ebx
-    cmpl %eax, HDR_SIZE_OFFSET(%ebx)
+; Don't bother reallocating if the size won't change
+    mov rax, [rsp + NEW_SIZE]
+    mov rbx, [rsp + SEGMENT_ADDR]
+    sub rbx, HEADER_SIZE
+    cmp [rbx + HDR_SIZE_OFFSET], rax
     jne reallocate_size_change
 
-# Size wouldn't change, return original address
-    movl SEGMENT_ADDR(%esp), %eax
+; Size wouldn't change, return original address
+    mov rax, [rsp + SEGMENT_ADDR]
     jmp reallocate_ret
 
 reallocate_size_change:
 
-# Allocate a new segment of the requested size
-    pushl NEW_SIZE(%esp)
+; Allocate a new segment of the requested size
+    push qword [rsp + NEW_SIZE]
     call allocate
-    addl $4, %esp
-    cmpl $0, %eax
+    add rsp, 8
+    cmp rax, 0
     je reallocate_ret
 
-# Figure out if the segment grew or shrunk
-    movl SEGMENT_ADDR(%esp), %ebx
-    subl $HEADER_SIZE, %ebx
-    movl HDR_SIZE_OFFSET(%ebx), %ecx
-    movl NEW_SIZE(%esp), %edx
-    cmpl %ecx, %edx
+; Figure out if the segment grew or shrunk
+    mov rbx, [rsp + SEGMENT_ADDR]
+    sub rbx, HEADER_SIZE
+    mov rcx, [rbx + HDR_SIZE_OFFSET]
+    mov rdx, [rsp + NEW_SIZE]
+    cmp rdx, rcx
     jg reallocate_size_increased
 
-# Segment shrunk, only copy NEW_SIZE bytes
-    movl %edx, %ecx
+; Segment shrunk, only copy NEW_SIZE bytes
+    mov rcx, rdx
 
-# Segment grew, copy the original number of bytes
+; Segment grew, copy the original number of bytes
 reallocate_size_increased:
 
-# Copy bytes from old segment to new
-    addl $HEADER_SIZE, %ebx
+; Copy bytes from old segment to new
+    add rbx, HEADER_SIZE
 
 reallocate_copy_loop:
-    decl %ecx
-    cmpl $0, %ecx
+    dec rcx
+    cmp rcx, 0
     jl reallocate_copy_loop_done
 
-    movb (%ebx, %ecx, 1), %dl
-    movb %dl, (%eax, %ecx, 1)
+    mov byte dl, [rbx + rcx]
+    mov byte [rbx + rcx], dl
 
     jmp reallocate_copy_loop
 
 reallocate_copy_loop_done:
 
-# Mark the original segment available
-    subl $HEADER_SIZE, %ebx
-    movl $AVAILABLE, HDR_AVAIL_OFFSET(%ebx)
+; Mark the original segment available
+    sub rbx, HEADER_SIZE
+    mov qword [rbx + HDR_AVAIL_OFFSET], AVAILABLE
 
 reallocate_ret:
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret
 
 
-#   Function deallocate
-#       Free a segment of memory previously allocated by the allocate function
-#
-#   Stack arguments:
-#       MEMORY_ADDR - The address of the segment to free.
+;   Function deallocate
+;       Free a segment of memory previously allocated by the allocate function
+;
+;   Stack arguments:
+;       MEMORY_ADDR - The address of the segment to free.
 
-.globl deallocate
-.type deallocate, @function
-.equ ST_MEMORY_ADDR, 4
+global deallocate:function
+    ST_MEMORY_ADDR equ 8
 deallocate:
 
-# Grab input parameter (address of block to free)
-    movl ST_MEMORY_ADDR(%esp), %eax
+; Grab input parameter (address of block to free)
+    mov rax, [rsp + ST_MEMORY_ADDR]
 
-# Rewind the pointer to the block's header
-    subl $HEADER_SIZE, %eax
+; Rewind the pointer to the block's header
+    sub rax, HEADER_SIZE
 
-# Mark segment available
-    movl $AVAILABLE, HDR_AVAIL_OFFSET(%eax)
+; Mark segment available
+    mov qword [rax + HDR_AVAIL_OFFSET], AVAILABLE
 
     ret

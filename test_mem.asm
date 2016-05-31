@@ -1,83 +1,87 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .bss
+extern allocate
+extern reallocate
+extern deallocate
 
-    string: .long 0
+section .bss
 
-.section .text
+    string resq 0
 
-.globl _start
+section .text
+
+global _start
 _start:
-    movl %esp, %ebp
+    mov rbp, rsp
 
-# Allocate a string
-    pushl $4
+; Allocate a string
+    push 4
     call allocate
-    addl $4, %esp
-    cmpl $0, %eax
+    add rsp, 8
+    cmp rax, 0
     je err
-    movl %eax, string
+    mov [string], rax
 
-# Write some text to the string
-    movl string, %ebx
-    movl $0, %ecx
-    movb $72, (%ebx, %ecx, 1)
-    incl %ecx
-    movb $105, (%ebx, %ecx, 1)
-    incl %ecx
-    movb $ASCII_LF, (%ebx, %ecx, 1)
-    incl %ecx
-    movb $0, (%ebx, %ecx, 1)
+; Write some text to the string
+    mov rbx, string
+    mov rcx, 0
+    mov byte [rbx + rcx], 72
+    inc rcx
+    mov byte [rbx + rcx], 105
+    inc rcx
+    mov byte [rbx + rcx], 10
+    inc rcx
+    mov byte [rbx + rcx], 0
 
-# Write string to stdout
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl string, %ecx
-    movl $3, %edx
-    int $LINUX
-    cmpl $0, %eax
+; Write string to stdout
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, string
+    mov rdx, 3
+    int LINUX
+    cmp rax, 0
     jl err
 
-# Increase segment size
-    pushl string
-    pushl $7
+; Increase segment size
+    push string
+    push 7
     call reallocate
-    addl $8, %esp
-    cmpl $0, %eax
+    add rsp, 16
+    cmp rax, 0
     jl err
-    movl %eax, string
+    mov [string], rax
 
-# Add more text to string
-    movl string, %ebx
-    movl $3, %ecx
-    movb $58, (%ebx, %ecx, 1)
-    incl %ecx
-    movb $68, (%ebx, %ecx, 1)
-    incl %ecx
-    movb $ASCII_LF, (%ebx, %ecx, 1)
-    incl %ecx
-    movb $0, (%ebx, %ecx, 1)
+; Add more text to string
+    mov rbx, string
+    mov rcx, 3
+    mov byte [rbx + rcx], 58
+    inc rcx
+    mov byte [rbx + rcx], 68
+    inc rcx
+    mov byte [rbx + rcx], 10
+    inc rcx
+    mov byte [rbx + rcx], 0
 
-# Write string to stdout
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl string, %ecx
-    movl $6, %edx
-    int $LINUX
-    cmpl $0, %eax
+; Write string to stdout
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, string
+    mov rdx, 6
+    int LINUX
+    cmp rax, 0
     jl err
 
-# Free the string
-    pushl string
+; Free the string
+    push string
     call deallocate
-    addl $4, %esp
+    add rsp, 8
 
-    movl $0, %ebx
+    mov rbx, 0
     jmp exit
 
 err:
-    movl %eax, %ebx
+    mov rbx, rax
 
 exit:
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rax, SYS_EXIT
+    int LINUX

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-as --32 mem.asm -o mem.o && \
-as --32 test_mem.asm -o test_mem.o && \
+nasm -f elf64 mem.asm && \
+nasm -f elf64 test_mem.asm && \
 
-ld -m elf_i386 mem.o test_mem.o -o a.out && \
+ld mem.o test_mem.o && \
 
 ./a.out; LAST_STATUS=$?; echo; echo "Status: $LAST_STATUS"
