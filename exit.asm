@@ -1,7 +1,7 @@
-.section .text
-.globl _start
+section .text
 
+global _start
 _start:
-    movl $1, %eax       # exit command to Linux
-    movl $7, %ebx       # status number argument
-    int $0x80
+    mov rax, 1      ; exit command to Linux
+    mov rbx, 7      ; exit status code
+    int 0x80

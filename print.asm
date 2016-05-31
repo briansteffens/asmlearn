@@ -1,21 +1,20 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .data
+section .data
 
-STR0:
-    .ascii "Greetings!\12\0"
+    string db "Greetings!"
+    string_len equ $-string
 
-.section .text
+section .text
 
-.globl _start
-
+global _start
 _start:
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl $STR0, %ecx
-    movl $11, %edx
-    int $LINUX
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, string
+    mov rdx, string_len
+    int LINUX
 
-    movl $SYS_EXIT, %eax
-    movl $SYS_EXIT_SUCCESS, %ebx
-    int $LINUX
+    mov rax, 1
+    mov rbx, 0
+    int LINUX

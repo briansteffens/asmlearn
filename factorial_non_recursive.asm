@@ -1,33 +1,27 @@
-.section .data
+section .text
 
-.section .text
-
-.globl _start
-.globl factorial
-
+global _start
 _start:
-    push $5
+    push 5
     call factorial
-    addl $4, %esp
-    movl %eax, %ebx
+    add rsp, 8
+    mov rbx, rax
 
-    movl $1, %eax
-    int $0x80
+    mov rax, 1
+    int 0x80
 
+global factorial
 factorial:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-    movl 8(%ebp), %ecx      # Input argument -> ecx
-    movl $1, %eax           # 1 -> eax (accumulator)
+    mov rcx, [rbp + 16]     ; Input argument -> rcx
+    mov rax, 1              ; 1 -> rax
 
 factorial_loop:
-    imull %ecx, %eax
+    imul rax, rcx
+    loop factorial_loop
 
-    decl %ecx               # Decrement counter
-    cmpl $1, %ecx           # Loop while counter > 1
-    jge factorial_loop
-
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+nasm -f elf64 strlen.asm && \
+nasm -f elf64 $1.asm && \
+
+ld strlen.o $1.o && \
+
+./a.out; LAST_STATUS=$?; echo; echo "Status: $LAST_STATUS"

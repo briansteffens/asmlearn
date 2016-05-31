@@ -1,20 +1,20 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .data
+extern strlen
 
-STR0:
-    .ascii "Greetings!\12\0"
+section .data
 
-.section .text
+    input db "Greetings!\0"
 
-.globl _start
+section .text
 
+global _start
 _start:
-    push $STR0
+    push input
     call strlen
-    addl $4, %esp
-    movl $0, %ebx
-    movb %al, %bl
+    add rsp, 8
+    mov rbx, 0
+    mov bl, al
 
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rax, SYS_EXIT
+    int LINUX

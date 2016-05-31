@@ -1,29 +1,29 @@
-.section .data
+section .data
 
-data_items:
-    .long 3,67,34,238,45,75,54,34,44,33,22,11,66,0
+    data_items dq 3,67,34,238,45,75,54,34,44,33,22,11,66,0
 
-.section .text
+section .text
 
-.globl _start
+global _start
 _start:
-    movl $0, %edi       # index register starts at 0
-    movl $0, %ebx       # max number starts at 0
+    mov rdi, 0       ; index register starts at 0
+    mov rbx, 0       ; max number starts at 0
 
 start_loop:
-    movl data_items(,%edi,4), %eax  # Load next value
-    incl %edi           # increment array index for next loop iteration
+    mov rax, [data_items + rdi * 8] ; Load next value
+    inc rdi             ; increment array index for next loop iteration
 
-    cmpl $0, %eax       # check for null-termination value
-    je loop_exit        # exit if so
+    cmp rax, 0          ; check for null-termination value
+    je loop_exit        ; exit if so
 
-    cmpl %ebx, %eax     # compare value to current 'max'
-    jle start_loop      # continue if value is not the new max
+    cmp rax, rbx        ; compare value to current 'max'
+    jle start_loop      ; continue if value is not the new max
 
-    movl %eax, %ebx     # set max to new value
+    mov rbx, rax        ; set max to new value
     jmp start_loop
 
 loop_exit:
-    # %ebx is the exit status code and it already has the max number
-    movl $1, %eax                    # exit command
-    int $0x80
+
+; %ebx is the exit status code and it already has the max number
+    mov rax, 1                    ; exit command
+    int 0x80

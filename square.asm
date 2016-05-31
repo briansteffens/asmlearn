@@ -1,27 +1,24 @@
-.section .data
+section .text
 
-.section .text
-
-.globl _start
-.globl square
-
+global _start
 _start:
-    push $5
+    push 5
     call square
-    addl $4, %esp
-    movl %eax, %ebx     # square() return -> os exit code
+    add esp, 8
+    mov rbx, rax            ; square() return -> os exit code
 
-    movl $1, %eax
-    int $0x80
+    mov rax, 1
+    int 0x80
 
+global square
 square:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-    movl 8(%ebp), %eax      # Input argument -> eax
-    movl %eax, %ebx         # Input argument -> ebx
-    imull %ebx, %eax        # Input arg * input arg
+    mov rax, [rbp + 16]     ; Input argument -> rax
+    mov rbx, rax            ; Input argument -> rbx
+    imul rax, rbx           ; Input arg * input arg
 
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret

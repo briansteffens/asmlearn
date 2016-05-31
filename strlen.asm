@@ -1,25 +1,23 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .text
+section .text
 
-.globl strlen
-.type strlen, @function
-
+global strlen:function
 strlen:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-    movl $-1, %ecx
-    movl 8(%ebp), %ebx
+    mov rcx, -1
+    mov rbx, [rbp + 16]
 
 strlen_loop_start:
-    incl %ecx
-    movb (%ebx, %ecx, 1), %al
-    cmpb $0, %al
+    inc rcx
+    mov al, [rbx + rcx]
+    cmp al, 0
     jne strlen_loop_start
 
-    movl %ecx, %eax
+    mov rax, rcx
 
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret
