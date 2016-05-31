@@ -1,39 +1,41 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .bss
+extern int_to_str
 
-    .equ BUFFER_LEN, 16
-    .lcomm BUFFER, BUFFER_LEN
+section .bss
 
-    counter: .long 0
+    BUFFER_LEN equ 16
+    BUFFER resb BUFFER_LEN
 
-.section .text
+    counter resq 0
 
-.globl _start
+section .text
+
+global _start
 _start:
-    movl %esp, %ebp
+    mov rbp, rsp
 
-    pushl $33278
-    pushl $BUFFER
+    push 33278
+    push BUFFER
     call int_to_str
-    addl $8, %esp
+    add rsp, 16
 
-    cmpl $0, %eax
+    cmp rax, 0
     jne err
 
-    movl %ebx, %edx
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl $BUFFER, %ecx
-    int $LINUX
-    cmpl $0, %eax
+    mov rdx, rbx
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, BUFFER
+    int LINUX
+    cmp rax, 0
     jl err
 
     jmp exit
 
 err:
-    movl %eax, %ebx
+    mov rbx, rax
 
 exit:
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rax, SYS_EXIT
+    int LINUX

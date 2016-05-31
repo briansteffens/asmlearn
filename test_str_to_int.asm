@@ -1,29 +1,29 @@
-.include "str_to_int.asm"
+%include "str_to_int.asm"
 
-.section .data
+section .data
 
-    INPUT: .ascii "123"
-    .equ INPUT_LEN, 3
+    INPUT db "123"
+    INPUT_LEN equ $-INPUT
 
-.section .text
+section .text
 
-.globl _start
+global _start
 _start:
-    movl %esp, %ebp
+    mov rbp, rsp
 
-    pushl $INPUT
-    pushl $INPUT_LEN
+    push INPUT
+    push INPUT_LEN
     call str_to_int
-    addl $8, %esp
+    add rsp, 16
 
-    cmpl $0, %eax
+    cmp rax, 0
     jne err
 
     jmp exit
 
 err:
-    movl %eax, %ebx
+    mov rbx, rax
 
 exit:
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rax, SYS_EXIT
+    int LINUX

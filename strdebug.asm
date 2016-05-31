@@ -1,83 +1,85 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .bss
+extern int_to_str
 
-    .equ BUFFER_LEN, 11
-    .lcomm BUFFER, BUFFER_LEN
+section .bss
 
-.section .data
+    BUFFER_LEN equ 11
+    BUFFER resb BUFFER_LEN
 
-    .equ PARAM_INPUT, 12
-    .equ PARAM_INPUT_LEN, 8
+section .data
 
-    .equ LOCAL_BYTES, 4
-    .equ LOCAL_INDEX, -4
+    PARAM_INPUT equ 24
+    PARAM_INPUT_LEN equ 16
 
-.section .text
+    LOCAL_BYTES equ 8
+    LOCAL_INDEX equ -8
 
-#   Function strdebug
-#       Prints out a string's chars in ASCII format for debugging purposes.
-#
-#   Stack arguments:
-#       INPUT     - The string to output
-#       INPUT_LEN - The number of characters in INPUT to consider part of the
-#                   string
-#
-#   Return values:
-#       eax       - 0 if success, otherwise failure
+    ASCII_LF equ 10
 
-.globl strdebug
-.type strdebug, @function
+section .text
 
+;   Function strdebug
+;       Prints out a string's chars in ASCII format for debugging purposes.
+;
+;   Stack arguments:
+;       INPUT     - The string to output
+;       INPUT_LEN - The number of characters in INPUT to consider part of the
+;                   string
+;
+;   Return values:
+;       rax       - 0 if success, otherwise failure
+
+global strdebug:function
 strdebug:
-    pushl %ebp
-    movl %esp, %ebp
-    subl $LOCAL_BYTES, %esp
+    push rbp
+    mov rbp, rsp
+    sub rsp, LOCAL_BYTES
 
-    movl $0, %ecx
+    mov rcx, 0
 
 strdebug_loop_start:
-    movl PARAM_INPUT_LEN(%ebp), %edx
-    cmpl %edx, %ecx
+    mov rdx, [rbp + PARAM_INPUT_LEN]
+    cmp rcx, rdx
     jge strdebug_done
-    movl %ecx, LOCAL_INDEX(%ebp)
+    mov [rbp + LOCAL_INDEX], rcx
 
-    movl PARAM_INPUT(%ebp), %ebx
+    mov rbx, [rbp + PARAM_INPUT]
 
-    xor %eax, %eax
-    movb (%ebx, %ecx, 1), %al
+    xor rax, rax
+    mov al, [rbx + rcx]
 
-    pushl %eax
-    pushl $BUFFER
+    push rax
+    push BUFFER
     call int_to_str
-    addl $8, %esp
-    cmpl $0, %eax
+    add rsp, 16
+    cmp rax, 0
     jne strdebug_err
 
-    movl %ebx, %edx
-    movl $BUFFER, %ecx
-    movb $ASCII_LF, (%ecx, %edx, 1)
-    incl %edx
+    mov rdx, rbx
+    mov rcx, BUFFER
+    mov byte [rcx, rdx], ASCII_LF
+    inc rdx
 
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    int $LINUX
-    cmpl $0, %eax
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    int LINUX
+    cmp rax, 0
     jl strdebug_err
 
-    movl LOCAL_INDEX(%ebp), %ecx
-    incl %ecx
+    mov rcx, [rbp + LOCAL_INDEX]
+    inc rcx
 
     jmp strdebug_loop_start
 
 strdebug_err:
-    movl $-1, %eax
+    mov rax, -1
     jmp strdebug_ret
 
 strdebug_done:
-    movl $0, %eax
+    mov rax, 0
 
 strdebug_ret:
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret

@@ -1,54 +1,54 @@
-.include "prompt.asm"
+%include "prompt.asm"
 
-.section .bss
+section .bss
 
-    .equ BUFFER_LEN, 5
-    .lcomm BUFFER, BUFFER_LEN
+    BUFFER_LEN equ 5
+    BUFFER resb BUFFER_LEN
 
-.section .data
+section .data
 
-    PROMPT: .ascii "Enter some text: "
-    .equ PROMPT_LEN, 17
+    PROMPT db "Enter some text: ", 0
+    PROMPT_LEN equ $-PROMPT
 
-    NEWLINE: .ascii "\n"
-    .equ NEWLINE_LEN, 1
+    NEWLINE db 10
+    NEWLINE_LEN equ $-NEWLINE
 
-.section .text
+section .text
 
-.globl _start
+global _start
 _start:
-    movl %esp, %ebp
+    mov rbp, rsp
 
-    pushl $PROMPT
-    pushl $PROMPT_LEN
-    pushl $BUFFER
-    pushl $BUFFER_LEN
+    push PROMPT
+    push PROMPT_LEN
+    push BUFFER
+    push BUFFER_LEN
     call prompt
-    addl $16, %esp
+    add rsp, 32
 
-    cmpl $0, %eax
+    cmp rax, 0
     jl err
 
-# Print result
-    movl %eax, %edx
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl $BUFFER, %ecx
-    int $LINUX
+; Print result
+    mov rdx, rax
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, BUFFER
+    int LINUX
 
-# Print newline
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl $NEWLINE, %ecx
-    movl $NEWLINE_LEN, %edx
-    int $LINUX
+; Print newline
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, NEWLINE
+    mov rdx, NEWLINE_LEN
+    int LINUX
 
-    movl $0, %ebx
+    mov rbx, 0
     jmp exit
 
 err:
-    movl %eax, %ebx
+    mov rbx, rax
 
 exit:
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rax, SYS_EXIT
+    int LINUX

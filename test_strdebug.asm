@@ -1,20 +1,21 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .data
+extern strdebug
 
-    STR: .ascii "Greetings!\12\0"
-    .equ STR_LEN, 11
+section .data
 
-.section .text
+    input db "Greetings!", 0
+    input_len equ $-input
 
-.globl _start
+section .text
 
+global _start
 _start:
-    push $STR
-    push $STR_LEN
+    push input
+    push input_len
     call strdebug
-    addl $8, %esp
-    movl $0, %ebx
+    add rsp, 16
+    mov rbx, 0
 
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rax, SYS_EXIT
+    int LINUX
