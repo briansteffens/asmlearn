@@ -1,29 +1,30 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .bss
+extern strcpy
 
-    .lcomm target, 255
+section .bss
 
-.section .data
+    target: resb 255
 
-    source: .ascii "Greetings!\12\0"
+section .data
 
-.section .text
+    source db "Greetings!", 0
 
-.globl _start
+section .text
 
+global _start
 _start:
-    push $source
-    push $target
+    push source
+    push target
     call strcpy
-    addl $8, %esp
+    add rsp, 16
 
-    movl %eax, %edx
-    movl $SYS_FILE_WRITE, %eax
-    movl $STDOUT, %ebx
-    movl $target, %ecx
-    int $LINUX
+    mov rdx, rax
+    mov rax, SYS_FILE_WRITE
+    mov rbx, STDOUT
+    mov rcx, target
+    int LINUX
 
-    movl %edx, %ebx
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rbx, rdx
+    mov rax, SYS_EXIT
+    int LINUX

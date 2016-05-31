@@ -1,20 +1,21 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .data
+extern strstr
 
-    haystack: .ascii "Greetings!\12\0"
-    needle: .ascii "ing\0"
+section .data
 
-.section .text
+    haystack db "Greetings!", 0
+    needle db "ing", 0
 
-.globl _start
+section .text
 
+global _start
 _start:
-    push $haystack          # String to search
-    push $needle            # String to search for
+    push haystack          ; String to search
+    push needle            ; String to search for
     call strstr
-    addl $8, %esp
+    add rsp, 16
 
-    movl %eax, %ebx
-    movl $SYS_EXIT, %eax
-    int $LINUX
+    mov rbx, rax
+    mov rax, SYS_EXIT
+    int LINUX

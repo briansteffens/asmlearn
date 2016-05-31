@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 nasm -f elf64 strlen.asm && \
+nasm -f elf64 strcpy.asm && \
+nasm -f elf64 strstr.asm && \
 nasm -f elf64 $1.asm && \
 
-ld strlen.o $1.o && \
+ld strlen.o strcpy.o strstr.o $1.o && \
 
 ./a.out; LAST_STATUS=$?; echo; echo "Status: $LAST_STATUS"

@@ -1,55 +1,53 @@
-.include "common.asm"
+%include "common.asm"
 
-.section .text
+section .text
 
-.globl strstr
-.type strstr, @function
-
+global strstr:function
 strstr:
-    pushl %ebp
-    movl %esp, %ebp
+    push rbp
+    mov rbp, rsp
 
-    subl $4, %esp                  # Reserve local storage
-    movl $-1, -4(%ebp)             # Haystack loop iterator
+    sub rsp, 8                     ; Reserve local storage
+    mov qword [rbp - 8], -1        ; Haystack loop iterator
 
-    movl $0, %edx                  # Haystack iterator
+    mov rdx, 0                     ; Haystack iterator
 
 strstr_haystack_loop_start:
-    movl -4(%ebp), %ecx            # Grab haystack iterator
-    incl %ecx                      # Next haystack char
-    movl %ecx, -4(%ebp)            # Save haystack iterator for next loop
-    movl $0, %edx                  # Reset needle iterator
+    mov rcx, [rbp - 8]             ; Grab haystack iterator
+    inc rcx                        ; Next haystack char
+    mov [rbp - 8], rcx             ; Save haystack iterator for next loop
+    mov rdx, 0                     ; Reset needle iterator
 
 strstr_needle_loop_start:
-    movl 12(%ebp), %ebx            # Load haystack
-    movb (%ebx, %ecx, 1), %al      # Get haystack byte
+    mov rbx, [rbp + 24]            ; Load haystack
+    mov al, [rbx + rcx]            ; Get haystack byte
 
-    cmpb $0, %al                   # End of haystack => no match
+    cmp al, 0                      ; End of haystack => no match
     je strstr_end_no_match
 
-    movl 8(%ebp), %ebx             # Load needle
-    movb (%ebx, %edx, 1), %ah      # Get needle byte
+    mov rbx, [rbp + 16]            ; Load needle
+    mov ah, [rbx + rdx]            ; Get needle byte
 
-    cmpb $0, %ah                   # End of needle => match
+    cmp ah, 0                      ; End of needle => match
     je strstr_end_match
 
-    incl %ecx                      # Next char
-    incl %edx
+    inc rcx                        ; Next char
+    inc rdx
 
-    cmpb %al, %ah
-    je strstr_needle_loop_start    # Matching so far, keep checking this offset
+    cmp al, ah
+    je strstr_needle_loop_start    ; Matching so far, keep checking this offset
 
-    jmp strstr_haystack_loop_start # No match, try next haystack offset
+    jmp strstr_haystack_loop_start ; No match, try next haystack offset
 
 strstr_end_match:
-    movl -4(%ebp), %eax            # Return haystack iterator
+    mov rax, [rbp - 8]             ; Return haystack iterator
     jmp strstr_ret
 
 strstr_end_no_match:
-    movl $-1, %eax                 # Return -1
+    mov rax, -1                    ; Return -1
     jmp strstr_ret
 
 strstr_ret:
-    movl %ebp, %esp
-    popl %ebp
+    mov rsp, rbp
+    pop rbp
     ret
